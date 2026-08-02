@@ -41,7 +41,7 @@ body.scene-ready .intro { opacity: 1; }
 .built-by { position: absolute; z-index: 6; right: var(--page-margin); bottom: var(--page-margin); display: flex; align-items: center; gap: 8px; color: rgba(255,255,255,.38); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
 .built-by .credit { white-space: nowrap; }
 .built-by .almost { max-width: 0; opacity: 0; overflow: hidden; white-space: nowrap; transition: max-width .18s ease, opacity .18s ease; }
-.built-by:hover .almost, .built-by:focus-within .almost { max-width: 60px; opacity: 1; }
+.built-by:hover .almost, .built-by:focus-within .almost { max-width: 110px; opacity: 1; }
 .built-by summary { display: flex; align-items: center; justify-content: center; gap: 8px; width: max-content; cursor: pointer; list-style: none; transition: color .15s ease; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: rgba(255,255,255,.38); }
 .built-by summary::-webkit-details-marker { display: none; }
 .built-by summary:hover, .built-by summary:focus-visible { color: rgba(255,255,255,.7); outline: none; }
