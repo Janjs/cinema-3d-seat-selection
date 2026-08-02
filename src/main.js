@@ -407,12 +407,20 @@ const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 let pointerStart = null;
 let hoveredId = null;
-function seatAtPointer(event) {
+function updatePointer(event) {
   const rect = canvas.getBoundingClientRect();
   pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
   raycaster.setFromCamera(pointer, camera);
+}
+function seatAtPointer(event) {
+  updatePointer(event);
   const hit = raycaster.intersectObjects(clickableMeshes, false)[0];
   return hit && !seatGroups.get(hit.object.userData.seatId).userData.occupied ? hit.object.userData.seatId : null;
+}
+function screenAtPointer(event) {
+  updatePointer(event);
+  const hit = raycaster.intersectObjects([screen], false)[0];
+  return Boolean(hit);
 }
 function hoverSeat(id) {
   if (hoveredId && hoveredId !== selectedId) updateSeatMaterial(hoveredId, seatGroups.get(hoveredId).userData.materials.base);
@@ -436,6 +444,11 @@ canvas.addEventListener("pointerleave", () => hoverSeat(null));
 canvas.addEventListener("pointerup", (event) => {
   if (isPanModifier(event)) return;
   if (!pointerStart || Math.hypot(event.clientX - pointerStart[0], event.clientY - pointerStart[1]) > 5) return;
+  if (screenAtPointer(event)) {
+    if (screenVideo.paused) screenVideo.play();
+    else screenVideo.pause();
+    return;
+  }
   const id = seatAtPointer(event);
   if (id) chooseSeat(id, true);
 });
@@ -468,7 +481,7 @@ async function loadScreenVideo() {
     screenVideo.addEventListener("error", reject, { once: true });
     screenVideo.load();
   });
-  screenVideo.currentTime = 14;
+  screenVideo.currentTime = 0;
   await screenVideo.play();
 }
 
