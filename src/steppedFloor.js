@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import {
   COLS,
+  FLOOR_TOP_Y,
   FIRST_ROW_Z,
   GROUND_BACK_Z,
   GROUND_FRONT_Z,
@@ -30,7 +31,7 @@ function rowPointAtX(x, row) {
 function createRowGeometry(row) {
   const vertices = [];
   const bottomY = -0.14;
-  const topY = 0.06 + row * ROW_RISE;
+  const topY = FLOOR_TOP_Y + row * ROW_RISE;
   const xCoords = [
     -GROUND_WIDTH / 2,
     ...Array.from({ length: COLS + 1 }, (_, index) => (index - COLS / 2) * SEAT_PITCH),

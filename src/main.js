@@ -5,6 +5,7 @@ import { roundedBoxGeometry } from "./roundedBox.js";
 import {
   AISLES,
   COLS,
+  FLOOR_TOP_Y,
   FIRST_ROW_Z,
   GROUND_CENTER_Z,
   GROUND_DEPTH,
@@ -34,7 +35,7 @@ scene.background = new THREE.Color(0x000000);
 scene.position.x = 2.4;
 const screenCenterY = 0.35 + IMAX_SCREEN_HEIGHT / 2;
 
-const camera = new THREE.PerspectiveCamera(46, innerWidth / innerHeight, 0.1, 80);
+const camera = new THREE.PerspectiveCamera(46, innerWidth / innerHeight, 0.1, 120);
 const mobileSeatMapQuery = window.matchMedia("(max-width: 720px)");
 
 function isMobileLayout() {
@@ -68,11 +69,15 @@ RectAreaLightUniformsLib.init();
 const controls = new OrbitControls(camera, canvas);
 const overviewMaxPolarAngle = Math.PI * 0.49;
 const seatViewMaxPolarAngle = Math.PI * 0.62;
+const overviewMinDistance = 2;
+const overviewMaxDistance = 55;
+const seatViewMinDistance = 0.01;
+const seatViewMaxDistance = 95;
 controls.target.copy(getOverviewTarget());
 controls.enableDamping = true;
 controls.dampingFactor = 0.065;
-controls.minDistance = 2;
-controls.maxDistance = 55;
+controls.minDistance = overviewMinDistance;
+controls.maxDistance = overviewMaxDistance;
 controls.maxPolarAngle = overviewMaxPolarAngle;
 controls.minPolarAngle = Math.PI * 0.08;
 controls.enablePan = true;
@@ -137,7 +142,7 @@ const guideLampMaterial = new THREE.MeshBasicMaterial({ color: 0xf0a952 });
 function addGuideLight(x, row, withPointLight = false) {
   const column = x / SEAT_PITCH;
   const curve = column ** 2 * ROW_CURVE;
-  const y = 0.18 + row * ROW_RISE;
+  const y = FLOOR_TOP_Y + row * ROW_RISE + 0.12;
   const z = FIRST_ROW_Z + row * ROW_PITCH + curve + 0.5;
   const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.055, 8, 8), guideLampMaterial);
   lamp.position.set(x, y, z);
@@ -267,7 +272,8 @@ function updateSeatMaterial(id, material) {
 
 function animateCamera(position, target, seatView) {
   controls.maxPolarAngle = seatView ? seatViewMaxPolarAngle : overviewMaxPolarAngle;
-  controls.minDistance = seatView ? 0.01 : 2;
+  controls.minDistance = seatView ? seatViewMinDistance : overviewMinDistance;
+  controls.maxDistance = seatView ? seatViewMaxDistance : overviewMaxDistance;
   cameraMove = {
     start: performance.now(),
     duration: 1800,

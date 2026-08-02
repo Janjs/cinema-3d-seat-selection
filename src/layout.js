@@ -3,7 +3,10 @@ export const COLS = 25;
 export const AISLES = new Set([7, 17]);
 export const SEAT_PITCH = 1.4;
 export const ROW_PITCH = 1.95;
-export const ROW_RISE = 0.52;
+export const ROW_RISE = 0.72;
+export const FLOOR_TOP_Y = 0.06;
+export const SEAT_CUSHION_BOTTOM = 0.415;
+export const SEAT_FLOAT = 0.1;
 export const FIRST_ROW_Z = -0.1;
 export const GROUND_WIDTH = 40;
 export const GROUND_DEPTH = 44;
@@ -33,7 +36,7 @@ export function makeSeats() {
         number,
         occupied: occupiedIds.has(id),
         x: (col - (COLS - 1) / 2) * SEAT_PITCH,
-        y: 0.25 + row * ROW_RISE,
+        y: FLOOR_TOP_Y + row * ROW_RISE - SEAT_CUSHION_BOTTOM + SEAT_FLOAT,
         z: FIRST_ROW_Z + row * ROW_PITCH + curve,
       });
     }
