@@ -18,13 +18,22 @@ import {
   SEAT_PITCH,
   makeSeats,
 } from "./layout.js";
-import { createCinemaScreen, IMAX_SCREEN_HEIGHT } from "./screenMaterial.js";
+import { createCinemaScreen, IMAX_SCREEN_HEIGHT, IMAX_SCREEN_WIDTH } from "./screenMaterial.js";
 import { createSteppedFloor } from "./steppedFloor.js";
-import { createCameraDebug, isCameraDebugEnabled } from "./cameraDebug.js";
+
+const SCREEN_FORMATS = {
+  "imax-70mm": { label: "IMAX 70mm", aspect: 1.43 },
+  imax: { label: "IMAX", aspect: 1.9 },
+  "70mm": { label: "70mm", aspect: 2.2 },
+  "35mm": { label: "35mm", aspect: 2.39 },
+  "dolby-vision": { label: "Dolby Vision", aspect: 1.85 },
+  "premium-large-format": { label: "Premium Large Format", aspect: 2.39 },
+};
 
 const canvas = document.querySelector("#cinema");
 const panKeyLabel = /Mac|iPhone|iPad|iPod/.test(navigator.userAgent) ? "⌘" : "Ctrl";
 document.querySelector("#pan-hint").textContent = `${panKeyLabel}+drag`;
+document.querySelector("#mobile-pan-hint").textContent = `${panKeyLabel}+drag`;
 const sceneLoader = document.querySelector(".scene-loader");
 const setLoadProgress = (progress, label) => {
   sceneLoader.style.setProperty("--scene-progress", `${progress}%`);
@@ -91,19 +100,6 @@ controls.minPolarAngle = Math.PI * 0.08;
 controls.enablePan = true;
 controls.screenSpacePanning = true;
 
-let cameraDebug = isCameraDebugEnabled()
-  ? createCameraDebug({ camera, controls, overview: cameraOverview, isMobileLayout })
-  : null;
-
-addEventListener("keydown", (event) => {
-  if (event.key.toLowerCase() !== "d" || event.metaKey || event.ctrlKey || event.altKey) return;
-  if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
-  if (!cameraDebug) {
-    cameraDebug = createCameraDebug({ camera, controls, overview: cameraOverview, isMobileLayout });
-  }
-  cameraDebug.toggle();
-});
-
 const materials = {
   floor: new THREE.MeshStandardMaterial({ color: 0x242027, roughness: 0.92 }),
   step: new THREE.MeshStandardMaterial({ color: 0x302a31, roughness: 0.85 }),
@@ -147,11 +143,14 @@ screenVideo.addEventListener("ended", () => {
 });
 const screenTexture = new THREE.VideoTexture(screenVideo);
 screenTexture.colorSpace = THREE.SRGBColorSpace;
-screenTexture.repeat.x = (1080 * 1.43) / 1920;
-screenTexture.offset.x = (1 - screenTexture.repeat.x) / 2;
+const screenBacking = new THREE.Mesh(
+  new THREE.PlaneGeometry(IMAX_SCREEN_WIDTH, IMAX_SCREEN_HEIGHT),
+  new THREE.MeshBasicMaterial({ color: 0x030303 }),
+);
+screenBacking.position.set(0, screenCenterY, SCREEN_Z - 0.01);
 const screen = createCinemaScreen(screenTexture);
 screen.position.set(0, screenCenterY, SCREEN_Z);
-scene.add(screen);
+scene.add(screenBacking, screen);
 
 // Aisle and side-corridor guide lights.
 const aisleLightXs = [...AISLES].map((col) => (col - (COLS - 1) / 2) * SEAT_PITCH);
@@ -240,11 +239,70 @@ const seatMap = document.querySelector(".seat-map");
 const mapChip = document.querySelector(".map-chip");
 const collapseMapButton = document.querySelector("#collapse-map");
 const confirmCollapsedButton = document.querySelector("#confirm-collapsed");
+const collapsedSeat = document.querySelector("#collapsed-seat");
+const collapsedFormat = document.querySelector("#collapsed-format");
+const screenFormatPickerWrap = document.querySelector(".screen-format-picker");
+const screenFormatPicker = screenFormatPickerWrap.querySelector("details");
+const screenFormatMenu = document.querySelector("#screen-format-menu");
+const screenFormatLabel = document.querySelector("#screen-format-label");
+const screenFormatDetail = document.querySelector("#screen-format-detail");
+const formatDisclaimer = document.querySelector("#format-disclaimer");
+const mobileInfoTrigger = document.querySelector("#mobile-info-trigger");
+const mobileInfoModal = document.querySelector("#mobile-info-modal");
+const mobileInfoClose = document.querySelector("#mobile-info-close");
+const mobileInfoBackdrop = mobileInfoModal.querySelector(".mobile-info-backdrop");
+
+function setMobileInfoOpen(open) {
+  mobileInfoModal.hidden = !open;
+  mobileInfoTrigger.setAttribute("aria-expanded", String(open));
+  document.body.style.overflow = open ? "hidden" : "";
+  if (open) mobileInfoClose.focus();
+}
+
+mobileInfoTrigger.addEventListener("click", () => setMobileInfoOpen(true));
+mobileInfoClose.addEventListener("click", () => setMobileInfoOpen(false));
+mobileInfoBackdrop.addEventListener("click", () => setMobileInfoOpen(false));
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !mobileInfoModal.hidden) setMobileInfoOpen(false);
+});
+
+function setScreenFormat(key) {
+  const format = SCREEN_FORMATS[key];
+  const videoAspect = 16 / 9;
+  screen.geometry.dispose();
+  screen.geometry = new THREE.PlaneGeometry(IMAX_SCREEN_WIDTH, IMAX_SCREEN_WIDTH / format.aspect);
+  screenTexture.repeat.set(Math.min(1, format.aspect / videoAspect), Math.min(1, videoAspect / format.aspect));
+  screenTexture.offset.set((1 - screenTexture.repeat.x) / 2, (1 - screenTexture.repeat.y) / 2);
+  screenFormatLabel.textContent = format.label;
+  screenFormatDetail.textContent = `${format.aspect.toFixed(2)}:1`;
+  collapsedFormat.textContent = format.label;
+  screenFormatMenu.querySelectorAll("button").forEach((button) => {
+    button.setAttribute("aria-current", button.dataset.format === key ? "true" : "false");
+  });
+}
+
+for (const [key, format] of Object.entries(SCREEN_FORMATS)) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.dataset.format = key;
+  button.innerHTML = `<span>${format.label}</span><small>${format.aspect.toFixed(2)}:1</small>`;
+  button.addEventListener("click", () => {
+    setScreenFormat(key);
+    if (!isMobileLayout()) formatDisclaimer.hidden = false;
+    screenFormatPicker.removeAttribute("open");
+  });
+  screenFormatMenu.append(button);
+}
+
+document.addEventListener("click", (event) => {
+  if (!screenFormatPickerWrap.contains(event.target)) screenFormatPicker.removeAttribute("open");
+});
+
+setScreenFormat("imax-70mm");
 
 function setMapCollapsed(collapsed) {
   mapShell.classList.toggle("collapsed", collapsed);
   seatMap.setAttribute("aria-hidden", String(collapsed));
-  collapseMapButton.textContent = collapsed ? collapseMapButton.dataset.preview || "Select a seat" : "−";
   collapseMapButton.setAttribute("aria-label", collapsed ? "Show seat map" : "Minimize seat map");
   const showChipReserve = collapsed && mapShell.classList.contains("has-selection");
   confirmCollapsedButton.setAttribute("aria-hidden", String(!showChipReserve));
@@ -319,9 +377,8 @@ function chooseSeat(id, preview) {
   document.querySelector(`[data-seat="${id}"]`)?.classList.add("chosen");
   selectedRow.textContent = `Row ${data.row}`;
   selectedSeat.textContent = `Seat ${data.number}`;
-  collapseMapButton.dataset.preview = `Row ${data.row} · Seat ${data.number}`;
+  collapsedSeat.textContent = `Row ${data.row} · Seat ${data.number}`;
   mapShell.classList.add("has-selection");
-  if (mapShell.classList.contains("collapsed")) collapseMapButton.textContent = collapseMapButton.dataset.preview;
   selectedDetail.textContent = `Standard · Excellent ${Math.abs(data.number - (COLS + 1) / 2) <= 4 ? "center" : "side"} view · €14.50`;
   confirmButton.disabled = false;
   confirmCollapsedButton.disabled = false;
@@ -404,7 +461,6 @@ function render() {
     }
   }
   controls.update(delta);
-  cameraDebug?.update();
   renderer.render(scene, camera);
 }
 render();
@@ -438,6 +494,7 @@ addEventListener("resize", () => {
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  if (!isMobileLayout() && !mobileInfoModal.hidden) setMobileInfoOpen(false);
   if (!document.body.classList.contains("seat-view") && !cameraMove) {
     camera.position.copy(getOverviewPosition());
     controls.target.copy(getOverviewTarget());
