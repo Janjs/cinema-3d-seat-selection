@@ -5,6 +5,7 @@
   font-synthesis: none;
   --red: #d15143;
   --cream: #f1dfbd;
+  --gold: #a8864f;
   --glass: rgba(20, 18, 25, 0.82);
   --page-margin: 28px;
 }
@@ -182,14 +183,14 @@ body.scene-ready .intro { opacity: 1; }
 .map-seat { aspect-ratio: 1; padding: 0; border: 0; border-radius: 4px 4px 2px 2px; background: #8f897f; box-shadow: inset 0 -2px rgba(0,0,0,.24); cursor: pointer; transition: transform .15s, background .15s, box-shadow .15s; }
 .map-seat:hover:not(:disabled), .map-seat:focus-visible { transform: scale(1.28); outline: 1px solid white; outline-offset: 2px; }
 .map-seat.occupied { background: #38353c; box-shadow: none; cursor: not-allowed; opacity: .65; }
-.map-seat.chosen { background: var(--red); box-shadow: 0 0 0 2px #f5b3a9, 0 0 16px rgba(209,81,67,.65); }
+.map-seat.chosen { background: var(--gold); box-shadow: 0 0 0 2px var(--cream), 0 0 16px rgba(168,134,79,.55); }
 .map-screen { margin: 16px auto 12px; width: 94%; height: 12px; border-top: 2px solid #d8bd8d; border-radius: 50%; color: #c9a97f; font-size: 8px; text-align: center; text-transform: uppercase; letter-spacing: .16em; }
 .map-screen span { position: relative; top: 2px; padding: 0 8px; }
 .legend { display: flex; align-items: center; justify-content: flex-end; gap: 14px; min-height: 43px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.08); font-size: 9px; color: rgba(255,255,255,.48); }
 .legend span { display: flex; align-items: center; gap: 5px; }
 .legend i { width: 7px; height: 7px; border-radius: 2px; background: #8f897f; }
 .legend .occupied { background: #38353c; }
-.legend .chosen { background: var(--red); }
+.legend .chosen { background: var(--gold); }
 
 .controls-hint {
   position: absolute;
@@ -279,7 +280,7 @@ body.seat-view .mobile-info-trigger { display: none; }
 .booking-actions button { height: 40px; padding: 0 14px; border-radius: 9px; cursor: pointer; transition: transform .15s, opacity .15s, background .15s; }
 .booking-actions button:hover:not(:disabled) { transform: translateY(-1px); }
 .secondary { border: 1px solid rgba(255,255,255,.14); background: transparent; }
-.primary { flex: 1; border: 0; background: var(--red); font-weight: 600; }
+.primary { flex: 1; border: 0; background: var(--gold); font-weight: 600; }
 .primary span { float: right; margin-left: 18px; }
 .primary:disabled { cursor: not-allowed; opacity: .35; }
 .toast { position: absolute; z-index: 6; left: 50%; bottom: 28px; transform: translate(-50%, 12px); padding: 10px 16px; border-radius: 20px; background: white; color: #18151c; font-size: 12px; opacity: 0; transition: .25s ease; pointer-events: none; }
