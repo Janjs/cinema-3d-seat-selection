@@ -20,6 +20,7 @@ import {
 } from "./layout.js";
 import { createCinemaScreen, IMAX_SCREEN_HEIGHT } from "./screenMaterial.js";
 import { createSteppedFloor } from "./steppedFloor.js";
+import { createCameraDebug, isCameraDebugEnabled } from "./cameraDebug.js";
 
 const canvas = document.querySelector("#cinema");
 const panKeyLabel = /Mac|iPhone|iPad|iPod/.test(navigator.userAgent) ? "⌘" : "Ctrl";
@@ -35,24 +36,31 @@ scene.background = new THREE.Color(0x000000);
 scene.position.x = 2.4;
 const screenCenterY = 0.35 + IMAX_SCREEN_HEIGHT / 2;
 
-const camera = new THREE.PerspectiveCamera(46, innerWidth / innerHeight, 0.1, 120);
+const cameraOverview = {
+  position: { x: 34.86, y: 22.32, z: 29.55 },
+  target: { x: -2.91, y: 7.03, z: 1.25 },
+  mobilePosition: { x: 21.91, y: 32.85, z: 47.41 },
+  mobileTarget: { x: 3.82, y: 12.66, z: 8.14 },
+  fov: 46,
+};
+
 const mobileSeatMapQuery = window.matchMedia("(max-width: 720px)");
 
 function isMobileLayout() {
   return mobileSeatMapQuery.matches;
 }
 
-const overviewPosition = new THREE.Vector3(10, 22, 38);
-const overviewTarget = new THREE.Vector3(1.1, 8, -1.5);
-const mobileOverviewTarget = new THREE.Vector3(1.1, 9.5, -1.5);
-
 function getOverviewPosition() {
-  return overviewPosition.clone();
+  const source = isMobileLayout() ? cameraOverview.mobilePosition : cameraOverview.position;
+  return new THREE.Vector3(source.x, source.y, source.z);
 }
 
 function getOverviewTarget() {
-  return (isMobileLayout() ? mobileOverviewTarget : overviewTarget).clone();
+  const source = isMobileLayout() ? cameraOverview.mobileTarget : cameraOverview.target;
+  return new THREE.Vector3(source.x, source.y, source.z);
 }
+
+const camera = new THREE.PerspectiveCamera(cameraOverview.fov, innerWidth / innerHeight, 0.1, 120);
 
 camera.position.copy(getOverviewPosition());
 
@@ -82,6 +90,19 @@ controls.maxPolarAngle = overviewMaxPolarAngle;
 controls.minPolarAngle = Math.PI * 0.08;
 controls.enablePan = true;
 controls.screenSpacePanning = true;
+
+let cameraDebug = isCameraDebugEnabled()
+  ? createCameraDebug({ camera, controls, overview: cameraOverview, isMobileLayout })
+  : null;
+
+addEventListener("keydown", (event) => {
+  if (event.key.toLowerCase() !== "d" || event.metaKey || event.ctrlKey || event.altKey) return;
+  if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
+  if (!cameraDebug) {
+    cameraDebug = createCameraDebug({ camera, controls, overview: cameraOverview, isMobileLayout });
+  }
+  cameraDebug.toggle();
+});
 
 const materials = {
   floor: new THREE.MeshStandardMaterial({ color: 0x242027, roughness: 0.92 }),
@@ -383,6 +404,7 @@ function render() {
     }
   }
   controls.update(delta);
+  cameraDebug?.update();
   renderer.render(scene, camera);
 }
 render();
