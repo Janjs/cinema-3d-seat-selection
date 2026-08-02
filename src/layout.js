@@ -1,6 +1,17 @@
-export const ROWS = 9;
-export const COLS = 15;
-export const AISLES = new Set([4, 10]);
+export const ROWS = 14;
+export const COLS = 25;
+export const AISLES = new Set([7, 17]);
+export const SEAT_PITCH = 1.4;
+export const ROW_PITCH = 1.95;
+export const ROW_RISE = 0.52;
+export const FIRST_ROW_Z = -0.1;
+export const GROUND_WIDTH = 40;
+export const GROUND_DEPTH = 44;
+export const GROUND_CENTER_Z = 7;
+export const GROUND_BACK_Z = GROUND_CENTER_Z - GROUND_DEPTH / 2;
+export const GROUND_FRONT_Z = GROUND_CENTER_Z + GROUND_DEPTH / 2;
+export const SCREEN_Z = GROUND_BACK_Z + 0.08;
+export const ROW_CURVE = -0.0045;
 
 const occupiedIds = new Set([
   "A3", "A8", "B12", "C2", "C6", "C13", "D4", "D9", "E1", "E7",
@@ -15,15 +26,15 @@ export function makeSeats() {
       const rowName = String.fromCharCode(65 + row);
       const number = col + 1;
       const id = `${rowName}${number}`;
-      const curve = (col - (COLS - 1) / 2) ** 2 * 0.018;
+      const curve = (col - (COLS - 1) / 2) ** 2 * ROW_CURVE;
       seats.push({
         id,
         row: rowName,
         number,
         occupied: occupiedIds.has(id),
-        x: (col - (COLS - 1) / 2) * 1.22,
-        y: 0.25 + row * 0.18,
-        z: -3.4 + row * 1.48 + curve,
+        x: (col - (COLS - 1) / 2) * SEAT_PITCH,
+        y: 0.25 + row * ROW_RISE,
+        z: FIRST_ROW_Z + row * ROW_PITCH + curve,
       });
     }
   }

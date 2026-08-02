@@ -1,7 +1,23 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { RectAreaLightUniformsLib } from "three/addons/lights/RectAreaLightUniformsLib.js";
 import { roundedBoxGeometry } from "./roundedBox.js";
-import { AISLES, COLS, ROWS, makeSeats } from "./layout.js";
+import {
+  AISLES,
+  COLS,
+  FIRST_ROW_Z,
+  GROUND_CENTER_Z,
+  GROUND_DEPTH,
+  GROUND_WIDTH,
+  ROW_PITCH,
+  ROW_RISE,
+  ROWS,
+  SCREEN_Z,
+  SEAT_PITCH,
+  makeSeats,
+} from "./layout.js";
+import { createCinemaScreen, IMAX_SCREEN_HEIGHT, IMAX_SCREEN_WIDTH } from "./screenMaterial.js";
+import { createSteppedFloor } from "./steppedFloor.js";
 
 const canvas = document.querySelector("#cinema");
 const panKeyLabel = /Mac|iPhone|iPad|iPod/.test(navigator.userAgent) ? "⌘" : "Ctrl";
@@ -14,8 +30,8 @@ const setLoadProgress = (progress, label) => {
 };
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x000000);
-scene.fog = new THREE.Fog(0x000000, 18, 42);
 scene.position.x = 2.4;
+const screenCenterY = 0.35 + IMAX_SCREEN_HEIGHT / 2;
 
 const camera = new THREE.PerspectiveCamera(46, innerWidth / innerHeight, 0.1, 80);
 const mobileSeatMapQuery = window.matchMedia("(max-width: 720px)");
@@ -24,9 +40,9 @@ function isMobileLayout() {
   return mobileSeatMapQuery.matches;
 }
 
-const overviewPosition = new THREE.Vector3(8.1, 10.4, 17.2);
-const overviewTarget = new THREE.Vector3(1.1, 1.5, 0.2);
-const mobileOverviewTarget = new THREE.Vector3(1.1, 2.6, 0.2);
+const overviewPosition = new THREE.Vector3(10, 22, 38);
+const overviewTarget = new THREE.Vector3(1.1, 8, -1.5);
+const mobileOverviewTarget = new THREE.Vector3(1.1, 9.5, -1.5);
 
 function getOverviewPosition() {
   return overviewPosition.clone();
@@ -46,6 +62,7 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.15;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+RectAreaLightUniformsLib.init();
 
 const controls = new OrbitControls(camera, canvas);
 const overviewMaxPolarAngle = Math.PI * 0.49;
@@ -54,22 +71,19 @@ controls.target.copy(getOverviewTarget());
 controls.enableDamping = true;
 controls.dampingFactor = 0.065;
 controls.minDistance = 2;
-controls.maxDistance = 31;
+controls.maxDistance = 55;
 controls.maxPolarAngle = overviewMaxPolarAngle;
 controls.minPolarAngle = Math.PI * 0.08;
 controls.enablePan = true;
 controls.screenSpacePanning = true;
 
 const materials = {
-  wall: new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 1 }),
   floor: new THREE.MeshStandardMaterial({ color: 0x242027, roughness: 0.92 }),
   step: new THREE.MeshStandardMaterial({ color: 0x302a31, roughness: 0.85 }),
   seat: new THREE.MeshStandardMaterial({ color: 0x762d2d, roughness: 0.76 }),
   hover: new THREE.MeshStandardMaterial({ color: 0xb94a40, emissive: 0x3b0c09, emissiveIntensity: 0.55, roughness: 0.68 }),
   occupied: new THREE.MeshStandardMaterial({ color: 0x29262c, roughness: 0.9 }),
   selected: new THREE.MeshStandardMaterial({ color: 0xd95849, emissive: 0x4f100d, emissiveIntensity: 0.75, roughness: 0.62 }),
-  metal: new THREE.MeshStandardMaterial({ color: 0x6d5944, roughness: 0.42, metalness: 0.62 }),
-  screen: new THREE.MeshBasicMaterial({ color: 0xe8dfd1 }),
 };
 
 function makeSeatMaterial(data, baseMaterial) {
@@ -87,46 +101,66 @@ const box = (w, h, d, material, x, y, z) => {
   const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
   mesh.position.set(x, y, z);
   mesh.receiveShadow = true;
-  mesh.castShadow = material !== materials.wall;
+  mesh.castShadow = true;
   scene.add(mesh);
   return mesh;
 };
 
-// Auditorium shell, stepped floor and softly glowing screen.
-box(23, 0.25, 26, materials.floor, 0, -0.2, 2.5);
-for (let row = 0; row < 9; row++) box(21, 0.2 + row * 0.18, 1.48, materials.step, 0, -0.04 + row * 0.09, -3.3 + row * 1.48);
-box(15.8, 6.5, 0.22, materials.wall, 0, 4.25, -9.35);
-const screen = box(14.5, 5.4, 0.12, materials.screen, 0, 4.3, -9.12);
-screen.castShadow = false;
-box(16.4, 0.15, 0.55, materials.metal, 0, 1.45, -9.02);
+// Auditorium shell and stepped floor.
+box(GROUND_WIDTH, 0.25, GROUND_DEPTH, materials.floor, 0, -0.2, GROUND_CENTER_Z);
+scene.add(createSteppedFloor(materials.step));
+const screenVideo = document.createElement("video");
+screenVideo.src = "/trailer-imax.mp4";
+screenVideo.muted = true;
+screenVideo.playsInline = true;
+screenVideo.preload = "auto";
+screenVideo.addEventListener("ended", () => {
+  screenVideo.currentTime = 5;
+  screenVideo.play();
+});
+const screenTexture = new THREE.VideoTexture(screenVideo);
+screenTexture.colorSpace = THREE.SRGBColorSpace;
+screenTexture.repeat.x = (1080 * 1.43) / 1920;
+screenTexture.offset.x = (1 - screenTexture.repeat.x) / 2;
+const screen = createCinemaScreen(screenTexture);
+screen.position.set(0, screenCenterY, SCREEN_Z);
+scene.add(screen);
 
-// Curtains and aisle guide lights.
-for (const x of [-8.5, 8.5]) {
-  box(1.8, 7.2, 0.35, materials.seat, x, 4, -9.05);
-  for (let row = 0; row < 9; row++) {
+// Aisle and outer-edge guide lights.
+const outerGuideX = (COLS - 1) / 2 * SEAT_PITCH + 1;
+const guideLightXs = [
+  -outerGuideX,
+  ...[...AISLES].map((col) => (col - (COLS - 1) / 2) * SEAT_PITCH),
+  outerGuideX,
+];
+for (const x of guideLightXs) {
+  for (let row = 0; row < ROWS; row++) {
     const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.055, 8, 8), new THREE.MeshBasicMaterial({ color: 0xf0a952 }));
-    lamp.position.set(x > 0 ? 10.25 : -10.25, 0.15 + row * 0.18, -3.2 + row * 1.48);
+    lamp.position.set(x, 0.18 + row * ROW_RISE, FIRST_ROW_Z + 0.6 + row * ROW_PITCH);
     scene.add(lamp);
+    if (row % 3 === 0) {
+      const aisleLight = new THREE.PointLight(0xffb76d, 9, 5.5, 2);
+      aisleLight.position.set(x, 0.38 + row * ROW_RISE, FIRST_ROW_Z + 0.6 + row * ROW_PITCH);
+      scene.add(aisleLight);
+    }
   }
 }
 
-scene.add(new THREE.HemisphereLight(0x8a7fa5, 0x170b09, 1.15));
-const key = new THREE.SpotLight(0xffd7a3, 90, 34, Math.PI / 5, 0.72, 2);
-key.position.set(0, 10, 7);
-key.target.position.set(0, 1, -4);
-key.castShadow = true;
-key.shadow.mapSize.set(1024, 1024);
-key.shadow.bias = -0.0004;
-scene.add(key, key.target);
-const screenGlow = new THREE.SpotLight(0xffe4bf, 28, 42, Math.PI / 3.2, 0.82, 1.4);
-screenGlow.position.set(0, 4.2, -8.7);
-screenGlow.target.position.set(0, 1.25, 3.6);
-scene.add(screenGlow, screenGlow.target);
-for (const x of [-7, 0, 7]) {
-  const light = new THREE.PointLight(0xd8975f, 12, 9, 2);
-  light.position.set(x, 5.8, 3.5);
-  scene.add(light);
-}
+scene.add(new THREE.HemisphereLight(0x8a7fa5, 0x170b09, 0.28));
+const screenLight = new THREE.RectAreaLight(
+  0xdde8ff,
+  2.2,
+  IMAX_SCREEN_WIDTH * 0.94,
+  IMAX_SCREEN_HEIGHT * 0.94,
+);
+screenLight.position.set(0, screenCenterY, SCREEN_Z + 0.35);
+screenLight.lookAt(0, 3.5, 8);
+scene.add(screenLight);
+
+const projector = new THREE.SpotLight(0xfff2df, 14, 50, 0.78, 0.72, 1.35);
+projector.position.set(0, 12, 30);
+projector.target.position.set(0, screenCenterY, SCREEN_Z);
+scene.add(projector, projector.target);
 
 const seatData = makeSeats();
 const seatGroups = new Map();
@@ -170,6 +204,7 @@ seatData.forEach(createSeat);
 setLoadProgress(55, "Building the seating");
 
 const map = document.querySelector("#map-grid");
+map.style.setProperty("--seat-columns", COLS);
 const mapShell = document.querySelector(".map-shell");
 const seatMap = document.querySelector(".seat-map");
 const mapChip = document.querySelector(".map-chip");
@@ -194,7 +229,7 @@ function reserveSeat() {
 
 if (isMobileLayout()) setMapCollapsed(true);
 
-for (let row = 8; row >= 0; row--) {
+for (let row = ROWS - 1; row >= 0; row--) {
   for (let col = 0; col < COLS; col++) {
     if (AISLES.has(col)) {
       const gap = document.createElement("span");
@@ -256,7 +291,7 @@ function chooseSeat(id, preview) {
   collapseMapButton.dataset.preview = `Row ${data.row} · Seat ${data.number}`;
   mapShell.classList.add("has-selection");
   if (mapShell.classList.contains("collapsed")) collapseMapButton.textContent = collapseMapButton.dataset.preview;
-  selectedDetail.textContent = `Standard · Excellent ${data.number >= 5 && data.number <= 11 ? "center" : "side"} view · €14.50`;
+  selectedDetail.textContent = `Standard · Excellent ${Math.abs(data.number - (COLS + 1) / 2) <= 4 ? "center" : "side"} view · €14.50`;
   confirmButton.disabled = false;
   confirmCollapsedButton.disabled = false;
   bookingCard.classList.add("visible");
@@ -264,7 +299,7 @@ function chooseSeat(id, preview) {
   if (mapShell.classList.contains("collapsed")) confirmCollapsedButton.setAttribute("aria-hidden", "false");
   if (preview) {
     const eye = seatGroups.get(id).localToWorld(new THREE.Vector3(0, seatPreviewEyeHeight, -0.08));
-    const target = scene.localToWorld(new THREE.Vector3(0, 4.15, -9.5)).sub(eye).setLength(0.01).add(eye);
+    const target = scene.localToWorld(new THREE.Vector3(0, screenCenterY, SCREEN_Z - 0.3)).sub(eye).setLength(0.01).add(eye);
     animateCamera(eye, target, true);
   }
 }
@@ -342,7 +377,19 @@ function render() {
 }
 render();
 
+async function loadScreenVideo() {
+  await new Promise((resolve, reject) => {
+    screenVideo.addEventListener("canplay", resolve, { once: true });
+    screenVideo.addEventListener("error", reject, { once: true });
+    screenVideo.load();
+  });
+  screenVideo.currentTime = 5;
+  await screenVideo.play();
+}
+
 async function revealInterface() {
+  setLoadProgress(65, "Starting preview");
+  await loadScreenVideo();
   setLoadProgress(78, "Lighting the auditorium");
   await Promise.all([
     renderer.compileAsync(scene, camera),
