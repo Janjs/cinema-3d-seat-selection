@@ -37,8 +37,8 @@ scene.position.x = 2.4;
 const screenCenterY = 0.35 + IMAX_SCREEN_HEIGHT / 2;
 
 const cameraOverview = {
-  position: { x: 34.86, y: 22.32, z: 29.55 },
-  target: { x: -2.91, y: 7.03, z: 1.25 },
+  position: { x: 25.47, y: 25.78, z: 40.83 },
+  target: { x: -2.96, y: 7.5, z: 1.06 },
   mobilePosition: { x: 21.91, y: 32.85, z: 47.41 },
   mobileTarget: { x: 3.82, y: 12.66, z: 8.14 },
   fov: 46,
