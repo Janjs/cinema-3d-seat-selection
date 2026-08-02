@@ -169,6 +169,7 @@ setLoadProgress(55, "Building the seating");
 const map = document.querySelector("#map-grid");
 const mapShell = document.querySelector(".map-shell");
 const seatMap = document.querySelector(".seat-map");
+const mapChip = document.querySelector(".map-chip");
 const collapseMapButton = document.querySelector("#collapse-map");
 const confirmCollapsedButton = document.querySelector("#confirm-collapsed");
 
@@ -266,7 +267,8 @@ function chooseSeat(id, preview) {
 }
 
 document.querySelector("#overview").addEventListener("click", () => animateCamera(getOverviewPosition(), getOverviewTarget(), false));
-collapseMapButton.addEventListener("click", () => {
+mapChip.addEventListener("click", (event) => {
+  if (event.target.closest(".map-chip-reserve")) return;
   setMapCollapsed(!mapShell.classList.contains("collapsed"));
 });
 document.querySelector("#confirm").addEventListener("click", reserveSeat);

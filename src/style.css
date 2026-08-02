@@ -101,25 +101,25 @@ body.scene-ready .intro { opacity: 1; }
 }
 .map-shell.collapsed .map-chip {
   gap: 8px;
-  padding: 5px 13px;
+  padding: 0;
   border: 1px solid rgba(255,255,255,.13);
   border-radius: 16px;
   background: rgba(20,18,25,.9);
   box-shadow: 0 8px 24px rgba(0,0,0,.22);
   backdrop-filter: blur(18px);
   transition: background .15s ease;
+  cursor: pointer;
 }
 .map-shell.collapsed .map-chip:hover { background: rgba(36, 32, 42, .96); }
 .map-shell.collapsed.has-selection .map-chip {
-  padding: 5px 5px 5px 13px;
   animation: map-chip-in .4s cubic-bezier(.22, 1, .36, 1) both;
 }
 .map-shell.collapsed .map-chip-toggle {
   width: auto;
   height: auto;
-  padding: 0;
+  padding: 5px 13px;
   border: 0;
-  border-radius: 0;
+  border-radius: 16px 0 0 16px;
   background: transparent;
   box-shadow: none;
   white-space: nowrap;
@@ -127,6 +127,10 @@ body.scene-ready .intro { opacity: 1; }
   font-weight: 500;
   color: rgba(255,255,255,.88);
   cursor: pointer;
+}
+.map-shell.collapsed.has-selection .map-chip-toggle {
+  padding: 5px 8px 5px 13px;
+  border-radius: 16px 0 0 16px;
 }
 .map-chip-reserve {
   display: none;
@@ -144,7 +148,7 @@ body.scene-ready .intro { opacity: 1; }
 .map-chip-reserve span { margin-left: 6px; }
 .map-chip-reserve:hover:not(:disabled) { transform: translateY(-1px); }
 .map-chip-reserve:disabled { cursor: not-allowed; opacity: .35; }
-.map-shell.collapsed.has-selection .map-chip-reserve { display: block; }
+.map-shell.collapsed.has-selection .map-chip-reserve { display: block; margin: 5px 5px 5px 0; }
 .map-heading { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
 .map-heading .eyebrow { margin-bottom: 0; transform: translateY(-4px); }
 .map-heading strong { font-size: 18px; font-weight: 600; }
