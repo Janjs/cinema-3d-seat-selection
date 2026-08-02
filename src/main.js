@@ -4,6 +4,8 @@ import { roundedBoxGeometry } from "./roundedBox.js";
 import { AISLES, COLS, ROWS, makeSeats } from "./layout.js";
 
 const canvas = document.querySelector("#cinema");
+const panKeyLabel = /Mac|iPhone|iPad|iPod/.test(navigator.userAgent) ? "⌘" : "Ctrl";
+document.querySelector("#pan-hint").textContent = `${panKeyLabel}+drag`;
 const sceneLoader = document.querySelector(".scene-loader");
 const setLoadProgress = (progress, label) => {
   sceneLoader.style.setProperty("--scene-progress", `${progress}%`);
@@ -55,6 +57,8 @@ controls.minDistance = 2;
 controls.maxDistance = 31;
 controls.maxPolarAngle = overviewMaxPolarAngle;
 controls.minPolarAngle = Math.PI * 0.08;
+controls.enablePan = true;
+controls.screenSpacePanning = true;
 
 const materials = {
   wall: new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 1 }),
@@ -298,9 +302,20 @@ function hoverSeat(id) {
   canvas.classList.toggle("seat-hover", Boolean(id));
 }
 canvas.addEventListener("pointerdown", (event) => { pointerStart = [event.clientX, event.clientY]; });
-canvas.addEventListener("pointermove", (event) => hoverSeat(seatAtPointer(event)));
+function isPanModifier(event) {
+  return event.metaKey || event.ctrlKey;
+}
+
+canvas.addEventListener("pointermove", (event) => {
+  if (isPanModifier(event)) {
+    hoverSeat(null);
+    return;
+  }
+  hoverSeat(seatAtPointer(event));
+});
 canvas.addEventListener("pointerleave", () => hoverSeat(null));
 canvas.addEventListener("pointerup", (event) => {
+  if (isPanModifier(event)) return;
   if (!pointerStart || Math.hypot(event.clientX - pointerStart[0], event.clientY - pointerStart[1]) > 5) return;
   const id = seatAtPointer(event);
   if (id) chooseSeat(id, true);
