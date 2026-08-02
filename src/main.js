@@ -20,6 +20,7 @@ import {
 } from "./layout.js";
 import { createCinemaScreen, IMAX_SCREEN_HEIGHT, IMAX_SCREEN_WIDTH } from "./screenMaterial.js";
 import { createSteppedFloor } from "./steppedFloor.js";
+import { createTicketExperience } from "./ticket.js";
 
 const SCREEN_FORMATS = {
   "imax-70mm": { label: "IMAX 70mm", aspect: 1.43 },
@@ -234,6 +235,11 @@ map.style.setProperty("--seat-columns", COLS);
 const mapShell = document.querySelector(".map-shell");
 const seatMap = document.querySelector(".seat-map");
 const mapChip = document.querySelector(".map-chip");
+const ticketExperience = createTicketExperience({
+  overlay: document.querySelector("#ticket-overlay"),
+  canvas: document.querySelector("#ticket-canvas"),
+  closeButton: document.querySelector("#ticket-close"),
+});
 const collapseMapButton = document.querySelector("#collapse-map");
 const confirmCollapsedButton = document.querySelector("#confirm-collapsed");
 const collapsedSeat = document.querySelector("#collapsed-seat");
@@ -306,10 +312,8 @@ function setMapCollapsed(collapsed) {
 }
 
 function reserveSeat() {
-  const toast = document.querySelector("#toast");
-  toast.textContent = `${selectedId} added to your booking`;
-  toast.classList.add("show");
-  setTimeout(() => toast.classList.remove("show"), 2400);
+  if (!selectedId) return;
+  ticketExperience.show(selectedId, screenFormatLabel.textContent);
 }
 
 if (isMobileLayout()) setMapCollapsed(true);
@@ -504,6 +508,7 @@ addEventListener("resize", () => {
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  ticketExperience.resize();
   if (!isMobileLayout() && !mobileInfoModal.hidden) setMobileInfoOpen(false);
   if (!document.body.classList.contains("seat-view") && !cameraMove) {
     camera.position.copy(getOverviewPosition());
