@@ -1,17 +1,24 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { roundedBoxGeometry } from "./roundedBox.js";
-import { AISLES, COLS, makeSeats } from "./layout.js";
+import { AISLES, COLS, ROWS, makeSeats } from "./layout.js";
 import "./style.css";
 
 const canvas = document.querySelector("#cinema");
+const sceneLoader = document.querySelector(".scene-loader");
+const setLoadProgress = (progress, label) => {
+  sceneLoader.style.setProperty("--scene-progress", `${progress}%`);
+  sceneLoader.setAttribute("aria-valuenow", progress);
+  sceneLoader.querySelector("span").textContent = label;
+};
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x08070b);
-scene.fog = new THREE.Fog(0x08070b, 17, 38);
+scene.background = new THREE.Color(0x000000);
+scene.fog = new THREE.Fog(0x000000, 18, 42);
+scene.position.x = 2.4;
 
 const camera = new THREE.PerspectiveCamera(46, innerWidth / innerHeight, 0.1, 80);
-const overviewPosition = new THREE.Vector3(12.8, 11.5, 18.5);
-const overviewTarget = new THREE.Vector3(0, 1.8, 1.5);
+const overviewPosition = new THREE.Vector3(13.1, 10.4, 15.2);
+const overviewTarget = new THREE.Vector3(1.1, 1.5, 0.2);
 camera.position.copy(overviewPosition);
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
@@ -24,24 +31,38 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 const controls = new OrbitControls(camera, canvas);
+const overviewMaxPolarAngle = Math.PI * 0.49;
+const seatViewMaxPolarAngle = Math.PI * 0.62;
 controls.target.copy(overviewTarget);
 controls.enableDamping = true;
 controls.dampingFactor = 0.065;
 controls.minDistance = 2;
 controls.maxDistance = 31;
-controls.maxPolarAngle = Math.PI * 0.49;
+controls.maxPolarAngle = overviewMaxPolarAngle;
 controls.minPolarAngle = Math.PI * 0.08;
 
 const materials = {
-  wall: new THREE.MeshStandardMaterial({ color: 0x17141a, roughness: 0.96 }),
+  wall: new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 1 }),
   floor: new THREE.MeshStandardMaterial({ color: 0x242027, roughness: 0.92 }),
   step: new THREE.MeshStandardMaterial({ color: 0x302a31, roughness: 0.85 }),
   seat: new THREE.MeshStandardMaterial({ color: 0x762d2d, roughness: 0.76 }),
+  hover: new THREE.MeshStandardMaterial({ color: 0xb94a40, emissive: 0x3b0c09, emissiveIntensity: 0.55, roughness: 0.68 }),
   occupied: new THREE.MeshStandardMaterial({ color: 0x29262c, roughness: 0.9 }),
   selected: new THREE.MeshStandardMaterial({ color: 0xd95849, emissive: 0x4f100d, emissiveIntensity: 0.75, roughness: 0.62 }),
   metal: new THREE.MeshStandardMaterial({ color: 0x6d5944, roughness: 0.42, metalness: 0.62 }),
   screen: new THREE.MeshBasicMaterial({ color: 0xe8dfd1 }),
 };
+
+function makeSeatMaterial(data, baseMaterial) {
+  const depth = data.row.charCodeAt(0) - 65;
+  const frontFactor = 1 - depth / (ROWS - 1);
+  const material = baseMaterial.clone();
+  material.color = baseMaterial.color.clone().multiplyScalar(0.82 + frontFactor * 0.3);
+  material.emissive = new THREE.Color(0x2a0f0c);
+  material.emissiveIntensity = (baseMaterial.emissiveIntensity ?? 0.12) * (0.55 + frontFactor * 0.45);
+  material.roughness = baseMaterial.roughness;
+  return material;
+}
 
 const box = (w, h, d, material, x, y, z) => {
   const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
@@ -54,9 +75,6 @@ const box = (w, h, d, material, x, y, z) => {
 
 // Auditorium shell, stepped floor and softly glowing screen.
 box(23, 0.25, 26, materials.floor, 0, -0.2, 2.5);
-box(0.3, 8, 26, materials.wall, -11.45, 3.7, 2.5);
-box(0.3, 8, 26, materials.wall, 11.45, 3.7, 2.5);
-box(23, 8, 0.3, materials.wall, 0, 3.7, 15.45);
 for (let row = 0; row < 9; row++) box(21, 0.2 + row * 0.18, 1.48, materials.step, 0, -0.04 + row * 0.09, -3.3 + row * 1.48);
 box(15.8, 6.5, 0.22, materials.wall, 0, 4.25, -9.35);
 const screen = box(14.5, 5.4, 0.12, materials.screen, 0, 4.3, -9.12);
@@ -81,6 +99,10 @@ key.castShadow = true;
 key.shadow.mapSize.set(1024, 1024);
 key.shadow.bias = -0.0004;
 scene.add(key, key.target);
+const screenGlow = new THREE.SpotLight(0xffe4bf, 28, 42, Math.PI / 3.2, 0.82, 1.4);
+screenGlow.position.set(0, 4.2, -8.7);
+screenGlow.target.position.set(0, 1.25, 3.6);
+scene.add(screenGlow, screenGlow.target);
 for (const x of [-7, 0, 7]) {
   const light = new THREE.PointLight(0xd8975f, 12, 9, 2);
   light.position.set(x, 5.8, 3.5);
@@ -99,7 +121,15 @@ function createSeat(data) {
   group.position.set(data.x, data.y, data.z);
   group.rotation.y = -data.x * 0.013;
   group.userData = data;
-  const material = data.occupied ? materials.occupied : materials.seat;
+  const litMaterial = data.occupied ? makeSeatMaterial(data, materials.occupied) : makeSeatMaterial(data, materials.seat);
+  const hoverMaterial = makeSeatMaterial(data, materials.hover);
+  const selectedMaterial = makeSeatMaterial(data, materials.selected);
+  group.userData.materials = {
+    base: litMaterial,
+    hover: hoverMaterial,
+    selected: selectedMaterial,
+    occupied: makeSeatMaterial(data, materials.occupied),
+  };
   const parts = [
     [cushionGeometry, 0, 0.55, 0.04],
     [backGeometry, 0, 1.13, 0.34],
@@ -107,7 +137,7 @@ function createSeat(data) {
     [armGeometry, 0.53, 0.72, 0.02],
   ];
   parts.forEach(([geometry, x, y, z]) => {
-    const mesh = new THREE.Mesh(geometry, material);
+    const mesh = new THREE.Mesh(geometry, group.userData.materials.base);
     mesh.position.set(x, y, z);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
@@ -119,9 +149,28 @@ function createSeat(data) {
   seatGroups.set(data.id, group);
 }
 seatData.forEach(createSeat);
+setLoadProgress(55, "Building the seating");
 
 const map = document.querySelector("#map-grid");
-for (let row = 0; row < 9; row++) {
+const mapShell = document.querySelector(".map-shell");
+const seatMap = document.querySelector(".seat-map");
+const collapseMapButton = document.querySelector("#collapse-map");
+const mobileSeatMapQuery = window.matchMedia("(max-width: 720px)");
+
+function isMobileLayout() {
+  return mobileSeatMapQuery.matches;
+}
+
+function setMapCollapsed(collapsed) {
+  mapShell.classList.toggle("collapsed", collapsed);
+  seatMap.setAttribute("aria-hidden", String(collapsed));
+  collapseMapButton.textContent = collapsed ? "+" : "−";
+  collapseMapButton.setAttribute("aria-label", collapsed ? "Show seat map" : "Minimize seat map");
+}
+
+if (isMobileLayout()) setMapCollapsed(true);
+
+for (let row = 8; row >= 0; row--) {
   for (let col = 0; col < COLS; col++) {
     if (AISLES.has(col)) {
       const gap = document.createElement("span");
@@ -142,15 +191,19 @@ for (let row = 0; row < 9; row++) {
 
 let selectedId = null;
 let cameraMove = null;
+const seatPreviewEyeHeight = 1.95;
 const selectedLabel = document.querySelector("#selected-label");
 const selectedDetail = document.querySelector("#selected-detail");
 const confirmButton = document.querySelector("#confirm");
+const bookingCard = document.querySelector(".booking-card");
 
 function updateSeatMaterial(id, material) {
   seatGroups.get(id).children.forEach((part) => { part.material = material; });
 }
 
 function animateCamera(position, target, seatView) {
+  controls.maxPolarAngle = seatView ? seatViewMaxPolarAngle : overviewMaxPolarAngle;
+  controls.minDistance = seatView ? 0.01 : 2;
   cameraMove = {
     start: performance.now(),
     duration: 1150,
@@ -167,26 +220,27 @@ function chooseSeat(id, preview) {
   const data = seatData.find((seat) => seat.id === id);
   if (!data || data.occupied) return;
   if (selectedId) {
-    updateSeatMaterial(selectedId, materials.seat);
+    updateSeatMaterial(selectedId, seatGroups.get(selectedId).userData.materials.base);
     document.querySelector(`[data-seat="${selectedId}"]`)?.classList.remove("chosen");
   }
   selectedId = id;
-  updateSeatMaterial(id, materials.selected);
+  updateSeatMaterial(id, seatGroups.get(id).userData.materials.selected);
   document.querySelector(`[data-seat="${id}"]`)?.classList.add("chosen");
   selectedLabel.textContent = `Row ${data.row} · Seat ${data.number}`;
   selectedDetail.textContent = `Standard · Excellent ${data.number >= 5 && data.number <= 11 ? "center" : "side"} view · €14.50`;
   confirmButton.disabled = false;
+  bookingCard.classList.add("visible");
+  bookingCard.setAttribute("aria-hidden", "false");
   if (preview) {
-    const eye = new THREE.Vector3(data.x, data.y + 1.65, data.z - 0.08);
-    animateCamera(eye, new THREE.Vector3(0, 4.15, -9.5), true);
+    const eye = seatGroups.get(id).localToWorld(new THREE.Vector3(0, seatPreviewEyeHeight, -0.08));
+    const target = scene.localToWorld(new THREE.Vector3(0, 4.15, -9.5)).sub(eye).setLength(0.01).add(eye);
+    animateCamera(eye, target, true);
   }
 }
 
 document.querySelector("#overview").addEventListener("click", () => animateCamera(overviewPosition.clone(), overviewTarget.clone(), false));
-document.querySelector("#collapse-map").addEventListener("click", (event) => {
-  const panel = document.querySelector(".seat-map");
-  panel.classList.toggle("minimized");
-  event.currentTarget.textContent = panel.classList.contains("minimized") ? "+" : "−";
+collapseMapButton.addEventListener("click", () => {
+  setMapCollapsed(!mapShell.classList.contains("collapsed"));
 });
 document.querySelector("#confirm").addEventListener("click", () => {
   const toast = document.querySelector("#toast");
@@ -195,17 +249,36 @@ document.querySelector("#confirm").addEventListener("click", () => {
   setTimeout(() => toast.classList.remove("show"), 2400);
 });
 
+document.addEventListener("pointerdown", (event) => {
+  if (!isMobileLayout() || mapShell.classList.contains("collapsed")) return;
+  if (mapShell.contains(event.target) || collapseMapButton.contains(event.target)) return;
+  setMapCollapsed(true);
+});
+
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 let pointerStart = null;
-canvas.addEventListener("pointerdown", (event) => { pointerStart = [event.clientX, event.clientY]; });
-canvas.addEventListener("pointerup", (event) => {
-  if (!pointerStart || Math.hypot(event.clientX - pointerStart[0], event.clientY - pointerStart[1]) > 5) return;
+let hoveredId = null;
+function seatAtPointer(event) {
   const rect = canvas.getBoundingClientRect();
   pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
   raycaster.setFromCamera(pointer, camera);
   const hit = raycaster.intersectObjects(clickableMeshes, false)[0];
-  if (hit) chooseSeat(hit.object.userData.seatId, false);
+  return hit && !seatGroups.get(hit.object.userData.seatId).userData.occupied ? hit.object.userData.seatId : null;
+}
+function hoverSeat(id) {
+  if (hoveredId && hoveredId !== selectedId) updateSeatMaterial(hoveredId, seatGroups.get(hoveredId).userData.materials.base);
+  hoveredId = id;
+  if (id && id !== selectedId) updateSeatMaterial(id, seatGroups.get(id).userData.materials.hover);
+  canvas.classList.toggle("seat-hover", Boolean(id));
+}
+canvas.addEventListener("pointerdown", (event) => { pointerStart = [event.clientX, event.clientY]; });
+canvas.addEventListener("pointermove", (event) => hoverSeat(seatAtPointer(event)));
+canvas.addEventListener("pointerleave", () => hoverSeat(null));
+canvas.addEventListener("pointerup", (event) => {
+  if (!pointerStart || Math.hypot(event.clientX - pointerStart[0], event.clientY - pointerStart[1]) > 5) return;
+  const id = seatAtPointer(event);
+  if (id) chooseSeat(id, true);
 });
 
 const clock = new THREE.Clock();
@@ -218,6 +291,9 @@ function render() {
     camera.position.lerpVectors(cameraMove.fromPosition, cameraMove.position, t);
     controls.target.lerpVectors(cameraMove.fromTarget, cameraMove.target, t);
     if (raw === 1) {
+      camera.position.copy(cameraMove.position);
+      controls.target.copy(cameraMove.target);
+      controls.update();
       cameraMove = null;
       controls.enabled = true;
     }
@@ -226,6 +302,18 @@ function render() {
   renderer.render(scene, camera);
 }
 render();
+
+async function revealInterface() {
+  setLoadProgress(78, "Lighting the auditorium");
+  await Promise.all([
+    renderer.compileAsync(scene, camera),
+    new Promise((resolve) => setTimeout(resolve, 900)),
+  ]);
+  setLoadProgress(100, "Ready");
+  await new Promise((resolve) => setTimeout(resolve, 250));
+  document.body.classList.add("scene-ready");
+}
+revealInterface();
 
 addEventListener("resize", () => {
   camera.aspect = innerWidth / innerHeight;
