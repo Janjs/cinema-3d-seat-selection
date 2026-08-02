@@ -2,7 +2,6 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { roundedBoxGeometry } from "./roundedBox.js";
 import { AISLES, COLS, ROWS, makeSeats } from "./layout.js";
-import "./style.css";
 
 const canvas = document.querySelector("#cinema");
 const sceneLoader = document.querySelector(".scene-loader");
@@ -17,9 +16,25 @@ scene.fog = new THREE.Fog(0x000000, 18, 42);
 scene.position.x = 2.4;
 
 const camera = new THREE.PerspectiveCamera(46, innerWidth / innerHeight, 0.1, 80);
+const mobileSeatMapQuery = window.matchMedia("(max-width: 720px)");
+
+function isMobileLayout() {
+  return mobileSeatMapQuery.matches;
+}
+
 const overviewPosition = new THREE.Vector3(8.1, 10.4, 17.2);
 const overviewTarget = new THREE.Vector3(1.1, 1.5, 0.2);
-camera.position.copy(overviewPosition);
+const mobileOverviewTarget = new THREE.Vector3(1.1, 2.6, 0.2);
+
+function getOverviewPosition() {
+  return overviewPosition.clone();
+}
+
+function getOverviewTarget() {
+  return (isMobileLayout() ? mobileOverviewTarget : overviewTarget).clone();
+}
+
+camera.position.copy(getOverviewPosition());
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -33,7 +48,7 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 const controls = new OrbitControls(camera, canvas);
 const overviewMaxPolarAngle = Math.PI * 0.49;
 const seatViewMaxPolarAngle = Math.PI * 0.62;
-controls.target.copy(overviewTarget);
+controls.target.copy(getOverviewTarget());
 controls.enableDamping = true;
 controls.dampingFactor = 0.065;
 controls.minDistance = 2;
@@ -155,17 +170,22 @@ const map = document.querySelector("#map-grid");
 const mapShell = document.querySelector(".map-shell");
 const seatMap = document.querySelector(".seat-map");
 const collapseMapButton = document.querySelector("#collapse-map");
-const mobileSeatMapQuery = window.matchMedia("(max-width: 720px)");
-
-function isMobileLayout() {
-  return mobileSeatMapQuery.matches;
-}
+const confirmCollapsedButton = document.querySelector("#confirm-collapsed");
 
 function setMapCollapsed(collapsed) {
   mapShell.classList.toggle("collapsed", collapsed);
   seatMap.setAttribute("aria-hidden", String(collapsed));
-  collapseMapButton.textContent = collapsed ? collapseMapButton.dataset.preview || "+" : "−";
+  collapseMapButton.textContent = collapsed ? collapseMapButton.dataset.preview || "Select a seat" : "−";
   collapseMapButton.setAttribute("aria-label", collapsed ? "Show seat map" : "Minimize seat map");
+  const showChipReserve = collapsed && mapShell.classList.contains("has-selection");
+  confirmCollapsedButton.setAttribute("aria-hidden", String(!showChipReserve));
+}
+
+function reserveSeat() {
+  const toast = document.querySelector("#toast");
+  toast.textContent = `${selectedId} added to your booking`;
+  toast.classList.add("show");
+  setTimeout(() => toast.classList.remove("show"), 2400);
 }
 
 if (isMobileLayout()) setMapCollapsed(true);
@@ -207,7 +227,7 @@ function animateCamera(position, target, seatView) {
   controls.minDistance = seatView ? 0.01 : 2;
   cameraMove = {
     start: performance.now(),
-    duration: 1150,
+    duration: 1800,
     fromPosition: camera.position.clone(),
     fromTarget: controls.target.clone(),
     position,
@@ -234,8 +254,10 @@ function chooseSeat(id, preview) {
   if (mapShell.classList.contains("collapsed")) collapseMapButton.textContent = collapseMapButton.dataset.preview;
   selectedDetail.textContent = `Standard · Excellent ${data.number >= 5 && data.number <= 11 ? "center" : "side"} view · €14.50`;
   confirmButton.disabled = false;
+  confirmCollapsedButton.disabled = false;
   bookingCard.classList.add("visible");
   bookingCard.setAttribute("aria-hidden", "false");
+  if (mapShell.classList.contains("collapsed")) confirmCollapsedButton.setAttribute("aria-hidden", "false");
   if (preview) {
     const eye = seatGroups.get(id).localToWorld(new THREE.Vector3(0, seatPreviewEyeHeight, -0.08));
     const target = scene.localToWorld(new THREE.Vector3(0, 4.15, -9.5)).sub(eye).setLength(0.01).add(eye);
@@ -243,16 +265,12 @@ function chooseSeat(id, preview) {
   }
 }
 
-document.querySelector("#overview").addEventListener("click", () => animateCamera(overviewPosition.clone(), overviewTarget.clone(), false));
+document.querySelector("#overview").addEventListener("click", () => animateCamera(getOverviewPosition(), getOverviewTarget(), false));
 collapseMapButton.addEventListener("click", () => {
   setMapCollapsed(!mapShell.classList.contains("collapsed"));
 });
-document.querySelector("#confirm").addEventListener("click", () => {
-  const toast = document.querySelector("#toast");
-  toast.textContent = `${selectedId} added to your booking`;
-  toast.classList.add("show");
-  setTimeout(() => toast.classList.remove("show"), 2400);
-});
+document.querySelector("#confirm").addEventListener("click", reserveSeat);
+confirmCollapsedButton.addEventListener("click", reserveSeat);
 
 document.addEventListener("pointerdown", (event) => {
   if (!isMobileLayout() || mapShell.classList.contains("collapsed")) return;
@@ -325,4 +343,9 @@ addEventListener("resize", () => {
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  if (!document.body.classList.contains("seat-view") && !cameraMove) {
+    camera.position.copy(getOverviewPosition());
+    controls.target.copy(getOverviewTarget());
+    controls.update();
+  }
 });

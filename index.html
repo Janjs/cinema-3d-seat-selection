@@ -4,7 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0b0a0f" />
-    <title>Choose your view</title>
+    <title>3D Seat Selector</title>
+    <style>
+      html, body, #app { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #000; color: #f5f1ea; }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" />
+    <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
     <main id="app">
@@ -12,7 +19,6 @@
 
       <section class="intro" aria-live="polite">
         <span class="eyebrow">Choose your perspective</span>
-        <h1>Find your seat,<br /><em>See the view.</em></h1>
         <p>Pick a seat on the map to step inside the cinema and preview the view from eye level.</p>
         <button class="intro-back" id="overview"><span aria-hidden="true">←</span> Back to seat selection</button>
       </section>
@@ -83,7 +89,10 @@
           </div>
 
         </aside>
-        <button class="icon-button" id="collapse-map" aria-label="Minimize seat map">−</button>
+        <div class="map-chip">
+          <button class="map-chip-toggle" id="collapse-map" aria-label="Minimize seat map">−</button>
+          <button class="primary map-chip-reserve" id="confirm-collapsed" disabled aria-hidden="true">Reserve seat <span>→</span></button>
+        </div>
       </div>
 
       <div class="controls-hint"><span>Click</span> a seat · <span>Drag</span> to look around · <span>Scroll</span> to zoom</div>
