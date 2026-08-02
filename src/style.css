@@ -27,8 +27,11 @@ button { color: inherit; }
 #cinema:active { cursor: grabbing; }
 #cinema.seat-hover { cursor: pointer; }
 
-.intro { position: absolute; z-index: 2; top: var(--page-margin); left: var(--page-margin); width: 340px; opacity: 0; pointer-events: none; transition: opacity .45s ease; }
-body.scene-ready .intro { opacity: 1; }
+#app > :not(#cinema, .scene-loader, .toast) { opacity: 0; transition: opacity .45s ease; }
+body:not(.scene-ready) #app > :not(#cinema, .scene-loader, .toast) { pointer-events: none; }
+body.scene-ready #app > :not(#cinema, .scene-loader, .toast) { opacity: 1; }
+
+.intro { position: absolute; z-index: 2; top: var(--page-margin); left: var(--page-margin); width: 340px; pointer-events: none; }
 .eyebrow { display: block; margin-bottom: 7px; color: #c9a97f; font-size: 10px; font-weight: 600; letter-spacing: .19em; text-transform: uppercase; }
 .intro p { margin: 0; color: rgba(255,255,255,.92); font-size: 15px; line-height: 1.6; }
 .intro-back { display: none; align-items: center; gap: 9px; padding: 10px 14px; border: 1px solid rgba(255,255,255,.14); border-radius: 9px; background: rgba(20,18,25,.72); cursor: pointer; pointer-events: auto; backdrop-filter: blur(12px); }
@@ -295,7 +298,7 @@ body.seat-view .intro-back { display: flex; animation: intro-back-in .3s ease-ou
 
 @media (prefers-reduced-motion: reduce) {
   .scene-loader { transition-duration: .01ms; }
-  .intro { opacity: 1; transition: none; }
+  #app > :not(#cinema, .scene-loader, .toast) { transition: none; }
   body.seat-view .intro-back { animation: none; }
   .map-shell.collapsed.has-selection .map-chip { animation: none; }
 }

@@ -137,10 +137,7 @@ screenVideo.src = "/trailer-imax.mp4";
 screenVideo.muted = true;
 screenVideo.playsInline = true;
 screenVideo.preload = "auto";
-screenVideo.addEventListener("ended", () => {
-  screenVideo.currentTime = 5;
-  screenVideo.play();
-});
+screenVideo.loop = true;
 const screenTexture = new THREE.VideoTexture(screenVideo);
 screenTexture.colorSpace = THREE.SRGBColorSpace;
 const screenBacking = new THREE.Mesh(
@@ -471,7 +468,7 @@ async function loadScreenVideo() {
     screenVideo.addEventListener("error", reject, { once: true });
     screenVideo.load();
   });
-  screenVideo.currentTime = 5;
+  screenVideo.currentTime = 14;
   await screenVideo.play();
 }
 
