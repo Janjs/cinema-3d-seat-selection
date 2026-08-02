@@ -29,23 +29,27 @@ button { color: inherit; }
 
 .intro { position: absolute; z-index: 2; top: 42px; left: var(--page-margin); width: 340px; pointer-events: none; transition: opacity .3s ease; }
 .eyebrow { display: block; margin-bottom: 7px; color: #c9a97f; font-size: 10px; font-weight: 600; letter-spacing: .19em; text-transform: uppercase; }
-.intro h1 { margin: 0 0 16px; font: 600 50px/0.98 "Playfair Display", serif; letter-spacing: -.035em; }
+.intro h1 { margin: 0 0 16px; font: 600 50px/0.98 "Playfair Display", serif; letter-spacing: -.035em; animation: intro-title-in .3s ease-out both; }
 .intro h1 em { color: var(--cream); font-weight: 600; }
 .intro p { margin: 0; color: rgba(255,255,255,.58); font-size: 13px; line-height: 1.65; }
+.intro-back { display: none; align-items: center; gap: 9px; padding: 10px 14px; border: 1px solid rgba(255,255,255,.14); border-radius: 9px; background: rgba(20,18,25,.72); cursor: pointer; pointer-events: auto; backdrop-filter: blur(12px); }
 .scene-loader { position: absolute; z-index: 8; top: 50%; left: 50%; width: min(340px, calc(100vw - 48px)); color: rgba(255,255,255,.42); font-size: 9px; letter-spacing: .14em; text-transform: uppercase; transform: translate(-50%, -50%); transition: opacity .25s ease; }
 .scene-loader span { display: block; margin-bottom: 9px; }
 .scene-loader i { display: block; width: 100%; height: 1px; overflow: hidden; background: rgba(255,255,255,.14); }
 .scene-loader i::after { content: ""; display: block; width: var(--scene-progress, 10%); height: 100%; background: var(--cream); box-shadow: 0 0 12px rgba(241,223,189,.65); transition: width .35s ease; }
 .scene-ready .scene-loader { opacity: 0; pointer-events: none; }
 
-.built-by { position: absolute; z-index: 6; right: var(--page-margin); bottom: var(--page-margin); color: rgba(255,255,255,.6); font-size: 11px; }
-.built-by summary { display: flex; align-items: center; justify-content: center; gap: 8px; width: max-content; padding: 10px 13px 10px 14px; border: 1px solid rgba(255,255,255,.1); border-radius: 18px; background: rgba(20,18,25,.76); backdrop-filter: blur(14px); cursor: pointer; list-style: none; transition: background .15s ease, border-color .15s ease, transform .15s ease; }
+.built-by { position: absolute; z-index: 6; right: var(--page-margin); bottom: var(--page-margin); display: flex; align-items: center; gap: 8px; color: rgba(255,255,255,.38); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
+.built-by .credit { white-space: nowrap; }
+.built-by .almost { max-width: 0; opacity: 0; overflow: hidden; white-space: nowrap; transition: max-width .18s ease, opacity .18s ease; }
+.built-by:hover .almost, .built-by:focus-within .almost { max-width: 60px; opacity: 1; }
+.built-by summary { display: flex; align-items: center; justify-content: center; gap: 8px; width: max-content; cursor: pointer; list-style: none; transition: color .15s ease; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: rgba(255,255,255,.38); }
 .built-by summary::-webkit-details-marker { display: none; }
-.built-by summary:hover, .built-by summary:focus-visible { background: rgba(31,27,37,.95); border-color: rgba(241,223,189,.24); transform: translateY(-1px); outline: none; }
-.built-by .label { color: rgba(255,255,255,.64); }
+.built-by summary:hover, .built-by summary:focus-visible { color: rgba(255,255,255,.7); outline: none; }
+.built-by .label { color: inherit; }
 .built-by .name { color: #f1dfbd; font-weight: 600; }
 .built-by .summary-chevron { width: 12px; height: 12px; margin-left: 2px; fill: currentColor; transition: transform .18s ease; }
-.built-by[open] .summary-chevron { transform: rotate(180deg); }
+.built-by details[open] .summary-chevron { transform: rotate(180deg); }
 .built-by nav { position: absolute; right: 0; bottom: calc(100% + 8px); display: grid; width: 176px; padding: 6px; border: 1px solid rgba(255,255,255,.1); border-radius: 12px; background: rgba(20,18,25,.94); box-shadow: 0 16px 40px rgba(0,0,0,.32); backdrop-filter: blur(16px); }
 .built-by a { display: grid; grid-template-columns: 18px 1fr auto; align-items: center; gap: 10px; padding: 10px 10px; border-radius: 8px; color: rgba(255,255,255,.74); text-decoration: none; transition: color .15s, background .15s, transform .15s; }
 .built-by a:hover, .built-by a:focus-visible { color: white; background: rgba(255,255,255,.1); transform: translateX(1px); outline: none; }
@@ -74,8 +78,9 @@ button { color: inherit; }
   transition: opacity .22s ease, transform .22s ease;
 }
 .map-shell.collapsed .seat-map { opacity: 0; transform: translateY(-8px) scale(.96); pointer-events: none; }
+.map-shell.collapsed.has-selection .icon-button { width: auto; padding: 0 13px; border-radius: 16px; white-space: nowrap; }
 .map-heading { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
-.map-heading .eyebrow { margin-bottom: 0; }
+.map-heading .eyebrow { margin-bottom: 0; transform: translateY(-4px); }
 .map-heading strong { font-family: "Playfair Display"; font-size: 18px; }
 .icon-button { position: absolute; z-index: 1; bottom: 18px; left: 18px; width: 30px; height: 30px; border: 1px solid rgba(255,255,255,.13); border-radius: 50%; background: rgba(20,18,25,.9); cursor: pointer; pointer-events: auto; box-shadow: 0 8px 24px rgba(0,0,0,.22); }
 .map-grid { display: grid; grid-template-columns: repeat(15, 1fr); gap: 5px 3px; align-items: center; min-height: 136px; }
@@ -95,8 +100,11 @@ button { color: inherit; }
 .controls-hint span { color: rgba(255,255,255,.7); }
 .booking-card { max-height: 0; margin: 0; padding-top: 0; border-top: 1px solid transparent; opacity: 0; overflow: hidden; transform: translateY(-8px); transition: max-height .35s ease, margin .35s ease, padding .35s ease, border-color .35s ease, opacity .25s ease, transform .35s ease; }
 .booking-card.visible { max-height: 150px; margin: 16px 0; padding-top: 15px; border-color: rgba(255,255,255,.09); opacity: 1; transform: translateY(0); }
-.booking-card strong { display: block; font: 600 20px "Playfair Display"; }
-.booking-card small { color: rgba(255,255,255,.45); font-size: 10px; }
+.booking-card > div:first-child { display: grid; grid-template-columns: 1fr auto; align-items: baseline; }
+.booking-card .eyebrow { margin-bottom: 0; transform: translateY(-4px); }
+.booking-card strong { display: flex; gap: .25em; font: 600 20px "Playfair Display"; }
+.booking-card #selected-seat::before { content: "· "; }
+.booking-card small { grid-column: 1 / -1; margin-top: 7px; color: rgba(255,255,255,.45); font-size: 10px; text-align: right; }
 .booking-actions { display: flex; gap: 8px; margin-top: 13px; }
 .booking-actions button { height: 40px; padding: 0 14px; border-radius: 9px; cursor: pointer; transition: transform .15s, opacity .15s, background .15s; }
 .booking-actions button:hover:not(:disabled) { transform: translateY(-1px); }
@@ -107,10 +115,21 @@ button { color: inherit; }
 .toast { position: absolute; z-index: 6; left: 50%; bottom: 28px; transform: translate(-50%, 12px); padding: 10px 16px; border-radius: 20px; background: white; color: #18151c; font-size: 12px; opacity: 0; transition: .25s ease; pointer-events: none; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
-body.seat-view .intro { opacity: 0; }
+body.seat-view .intro > :not(.intro-back) { display: none; }
+body.seat-view .intro-back { display: flex; animation: intro-back-in .3s ease-out both; }
+
+@keyframes intro-back-in {
+  from { opacity: 0; transform: translateX(-18px); }
+}
+
+@keyframes intro-title-in {
+  from { opacity: 0; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .scene-loader { transition-duration: .01ms; }
+  .intro h1,
+  body.seat-view .intro-back { animation: none; }
 }
 
 @media (max-width: 720px) {

@@ -17,7 +17,7 @@ scene.fog = new THREE.Fog(0x000000, 18, 42);
 scene.position.x = 2.4;
 
 const camera = new THREE.PerspectiveCamera(46, innerWidth / innerHeight, 0.1, 80);
-const overviewPosition = new THREE.Vector3(13.1, 10.4, 15.2);
+const overviewPosition = new THREE.Vector3(8.1, 10.4, 17.2);
 const overviewTarget = new THREE.Vector3(1.1, 1.5, 0.2);
 camera.position.copy(overviewPosition);
 
@@ -164,7 +164,7 @@ function isMobileLayout() {
 function setMapCollapsed(collapsed) {
   mapShell.classList.toggle("collapsed", collapsed);
   seatMap.setAttribute("aria-hidden", String(collapsed));
-  collapseMapButton.textContent = collapsed ? "+" : "−";
+  collapseMapButton.textContent = collapsed ? collapseMapButton.dataset.preview || "+" : "−";
   collapseMapButton.setAttribute("aria-label", collapsed ? "Show seat map" : "Minimize seat map");
 }
 
@@ -192,7 +192,8 @@ for (let row = 8; row >= 0; row--) {
 let selectedId = null;
 let cameraMove = null;
 const seatPreviewEyeHeight = 1.95;
-const selectedLabel = document.querySelector("#selected-label");
+const selectedRow = document.querySelector("#selected-row");
+const selectedSeat = document.querySelector("#selected-seat");
 const selectedDetail = document.querySelector("#selected-detail");
 const confirmButton = document.querySelector("#confirm");
 const bookingCard = document.querySelector(".booking-card");
@@ -226,7 +227,11 @@ function chooseSeat(id, preview) {
   selectedId = id;
   updateSeatMaterial(id, seatGroups.get(id).userData.materials.selected);
   document.querySelector(`[data-seat="${id}"]`)?.classList.add("chosen");
-  selectedLabel.textContent = `Row ${data.row} · Seat ${data.number}`;
+  selectedRow.textContent = `Row ${data.row}`;
+  selectedSeat.textContent = `Seat ${data.number}`;
+  collapseMapButton.dataset.preview = `Row ${data.row} · Seat ${data.number}`;
+  mapShell.classList.add("has-selection");
+  if (mapShell.classList.contains("collapsed")) collapseMapButton.textContent = collapseMapButton.dataset.preview;
   selectedDetail.textContent = `Standard · Excellent ${data.number >= 5 && data.number <= 11 ? "center" : "side"} view · €14.50`;
   confirmButton.disabled = false;
   bookingCard.classList.add("visible");
