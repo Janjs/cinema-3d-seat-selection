@@ -78,7 +78,7 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setSize(innerWidth, innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.15;
+renderer.toneMappingExposure = 1.0;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 RectAreaLightUniformsLib.init();
@@ -178,12 +178,12 @@ for (const x of guideLightXs) {
 }
 
 scene.add(new THREE.HemisphereLight(0x8a7fa5, 0x170b09, 0.28));
-const screenLight = new THREE.RectAreaLight(0xdde8ff, 1.03, 36.1899, 25.3076);
+const screenLight = new THREE.RectAreaLight(0xc4cedf, 0.62, 36.1899, 25.3076);
 screenLight.position.set(0, 13.81153, -14.57);
 screenLight.lookAt(0, -5, 8);
 scene.add(screenLight);
 
-const projector = new THREE.SpotLight(0xfff2df, 14, 50, 0.78, 0.72, 1.35);
+const projector = new THREE.SpotLight(0xfff2df, 8.5, 50, 0.78, 0.85, 1.35);
 projector.position.set(0, 12, 30);
 projector.target.position.set(0, screenCenterY, SCREEN_Z);
 scene.add(projector, projector.target);

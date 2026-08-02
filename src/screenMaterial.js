@@ -10,7 +10,8 @@ export const IMAX_SCREEN_HEIGHT = IMAX_SCREEN_WIDTH / 1.43;
 export function createCinemaScreen(screenTexture) {
   const material = new THREE.MeshBasicMaterial({
     map: screenTexture,
-    toneMapped: false,
+    color: 0xd8d8d8,
+    toneMapped: true,
     fog: false,
   });
 
