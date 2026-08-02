@@ -138,7 +138,6 @@ const armGeometry = roundedBoxGeometry(0.13, 0.38, 0.68, 0.06);
 function createSeat(data) {
   const group = new THREE.Group();
   group.position.set(data.x, data.y, data.z);
-  group.rotation.y = -data.x * 0.013;
   group.userData = data;
   const litMaterial = data.occupied ? makeSeatMaterial(data, materials.occupied) : makeSeatMaterial(data, materials.seat);
   const hoverMaterial = makeSeatMaterial(data, materials.hover);
