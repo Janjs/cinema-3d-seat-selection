@@ -12,11 +12,12 @@ import {
   ROW_PITCH,
   ROW_RISE,
   ROWS,
+  ROW_CURVE,
   SCREEN_Z,
   SEAT_PITCH,
   makeSeats,
 } from "./layout.js";
-import { createCinemaScreen, IMAX_SCREEN_HEIGHT, IMAX_SCREEN_WIDTH } from "./screenMaterial.js";
+import { createCinemaScreen, IMAX_SCREEN_HEIGHT } from "./screenMaterial.js";
 import { createSteppedFloor } from "./steppedFloor.js";
 
 const canvas = document.querySelector("#cinema");
@@ -126,35 +127,38 @@ const screen = createCinemaScreen(screenTexture);
 screen.position.set(0, screenCenterY, SCREEN_Z);
 scene.add(screen);
 
-// Aisle and outer-edge guide lights.
-const outerGuideX = (COLS - 1) / 2 * SEAT_PITCH + 1;
-const guideLightXs = [
-  -outerGuideX,
-  ...[...AISLES].map((col) => (col - (COLS - 1) / 2) * SEAT_PITCH),
-  outerGuideX,
-];
+// Aisle and side-corridor guide lights.
+const aisleLightXs = [...AISLES].map((col) => (col - (COLS - 1) / 2) * SEAT_PITCH);
+const seatingHalfWidth = (COLS / 2) * SEAT_PITCH;
+const sideCorridorX = seatingHalfWidth + (GROUND_WIDTH / 2 - seatingHalfWidth) / 2;
+const guideLightXs = [-sideCorridorX, ...aisleLightXs, sideCorridorX];
+const guideLampMaterial = new THREE.MeshBasicMaterial({ color: 0xf0a952 });
+
+function addGuideLight(x, row, withPointLight = false) {
+  const column = x / SEAT_PITCH;
+  const curve = column ** 2 * ROW_CURVE;
+  const y = 0.18 + row * ROW_RISE;
+  const z = FIRST_ROW_Z + row * ROW_PITCH + curve + 0.5;
+  const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.055, 8, 8), guideLampMaterial);
+  lamp.position.set(x, y, z);
+  scene.add(lamp);
+  if (withPointLight) {
+    const light = new THREE.PointLight(0xffb76d, 2.4, 3.8, 2);
+    light.position.set(x, y + 0.2, z);
+    scene.add(light);
+  }
+}
+
 for (const x of guideLightXs) {
   for (let row = 0; row < ROWS; row++) {
-    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.055, 8, 8), new THREE.MeshBasicMaterial({ color: 0xf0a952 }));
-    lamp.position.set(x, 0.18 + row * ROW_RISE, FIRST_ROW_Z + 0.6 + row * ROW_PITCH);
-    scene.add(lamp);
-    if (row % 3 === 0) {
-      const aisleLight = new THREE.PointLight(0xffb76d, 9, 5.5, 2);
-      aisleLight.position.set(x, 0.38 + row * ROW_RISE, FIRST_ROW_Z + 0.6 + row * ROW_PITCH);
-      scene.add(aisleLight);
-    }
+    addGuideLight(x, row, row % 3 === 0);
   }
 }
 
 scene.add(new THREE.HemisphereLight(0x8a7fa5, 0x170b09, 0.28));
-const screenLight = new THREE.RectAreaLight(
-  0xdde8ff,
-  2.2,
-  IMAX_SCREEN_WIDTH * 0.94,
-  IMAX_SCREEN_HEIGHT * 0.94,
-);
-screenLight.position.set(0, screenCenterY, SCREEN_Z + 0.35);
-screenLight.lookAt(0, 3.5, 8);
+const screenLight = new THREE.RectAreaLight(0xdde8ff, 1.03, 36.1899, 25.3076);
+screenLight.position.set(0, 13.81153, -14.57);
+screenLight.lookAt(0, -5, 8);
 scene.add(screenLight);
 
 const projector = new THREE.SpotLight(0xfff2df, 14, 50, 0.78, 0.72, 1.35);
