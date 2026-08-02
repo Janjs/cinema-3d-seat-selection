@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0b0a0f" />
+    <title>Velvet Cinema — Choose your view</title>
+  </head>
+  <body>
+    <main id="app">
+      <canvas id="cinema" aria-label="Interactive 3D cinema seating view"></canvas>
+
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="Velvet Cinema home">
+          <span class="brand-mark">V</span>
+          <span>Velvet <b>Cinema</b></span>
+        </a>
+        <div class="show-meta">
+          <span class="eyebrow">Tonight · 20:30</span>
+          <strong>The Last Horizon</strong>
+          <span>Screen 01</span>
+        </div>
+      </header>
+
+      <section class="intro" aria-live="polite">
+        <span class="eyebrow">Choose your perspective</span>
+        <h1>Your seat.<br /><em>Your view.</em></h1>
+        <p>Pick a seat on the map to step inside the cinema and preview the view from eye level.</p>
+      </section>
+
+      <aside class="seat-map" aria-label="Top-down seat map">
+        <div class="map-heading">
+          <div><span class="eyebrow">Auditorium</span><strong>Screen 01</strong></div>
+          <button class="icon-button" id="collapse-map" aria-label="Minimize seat map">−</button>
+        </div>
+        <div id="map-grid" class="map-grid"></div>
+        <div class="map-screen"><span>Screen</span></div>
+        <div class="legend">
+          <span><i class="available"></i>Available</span>
+          <span><i class="occupied"></i>Occupied</span>
+          <span><i class="chosen"></i>Your seat</span>
+        </div>
+      </aside>
+
+      <div class="controls-hint"><span>Drag</span> to look around · <span>Scroll</span> to zoom</div>
+
+      <section class="booking-card" aria-live="polite">
+        <div>
+          <span class="eyebrow">Selected seat</span>
+          <strong id="selected-label">None yet</strong>
+          <small id="selected-detail">Choose an available seat</small>
+        </div>
+        <div class="booking-actions">
+          <button class="secondary" id="overview">Overview</button>
+          <button class="primary" id="confirm" disabled>Reserve seat <span>→</span></button>
+        </div>
+      </section>
+
+      <div class="toast" id="toast" role="status"></div>
+    </main>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
