@@ -319,7 +319,7 @@ function reserveSeat() {
 if (isMobileLayout()) setMapCollapsed(true);
 
 for (let row = ROWS - 1; row >= 0; row--) {
-  for (let col = 0; col < COLS; col++) {
+  for (let col = COLS - 1; col >= 0; col--) {
     if (AISLES.has(col)) {
       const gap = document.createElement("span");
       map.append(gap);
