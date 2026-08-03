@@ -104,8 +104,8 @@ controls.screenSpacePanning = true;
 const materials = {
   floor: new THREE.MeshStandardMaterial({ color: 0x242027, roughness: 0.92 }),
   step: new THREE.MeshStandardMaterial({ color: 0x302a31, roughness: 0.85 }),
-  seat: new THREE.MeshStandardMaterial({ color: 0x762d2d, roughness: 0.76 }),
-  hover: new THREE.MeshStandardMaterial({ color: 0xb94a40, emissive: 0x3b0c09, emissiveIntensity: 0.55, roughness: 0.68 }),
+  seat: new THREE.MeshStandardMaterial({ color: 0x903636, emissive: 0x2a100e, emissiveIntensity: 0.22, roughness: 0.74 }),
+  hover: new THREE.MeshStandardMaterial({ color: 0xcc5248, emissive: 0x5a1812, emissiveIntensity: 0.82, roughness: 0.62 }),
   occupied: new THREE.MeshStandardMaterial({ color: 0x29262c, roughness: 0.9 }),
   selected: new THREE.MeshStandardMaterial({ color: 0xd95849, emissive: 0x4f100d, emissiveIntensity: 0.75, roughness: 0.62 }),
 };
@@ -114,8 +114,8 @@ function makeSeatMaterial(data, baseMaterial) {
   const depth = data.row.charCodeAt(0) - 65;
   const frontFactor = 1 - depth / (ROWS - 1);
   const material = baseMaterial.clone();
-  material.color = baseMaterial.color.clone().multiplyScalar(0.82 + frontFactor * 0.3);
-  material.emissive = new THREE.Color(0x2a0f0c);
+  material.color = baseMaterial.color.clone().multiplyScalar(0.88 + frontFactor * 0.28);
+  material.emissive = baseMaterial.emissive.clone();
   material.emissiveIntensity = (baseMaterial.emissiveIntensity ?? 0.12) * (0.55 + frontFactor * 0.45);
   material.roughness = baseMaterial.roughness;
   return material;
@@ -179,9 +179,9 @@ for (const x of guideLightXs) {
 }
 
 scene.add(new THREE.HemisphereLight(0x8a7fa5, 0x170b09, 0.28));
-const screenLight = new THREE.RectAreaLight(0xc4cedf, 0.62, 36.1899, 25.3076);
+const screenLight = new THREE.RectAreaLight(0xc4cedf, 1.5, IMAX_SCREEN_WIDTH * 0.68, IMAX_SCREEN_HEIGHT);
 screenLight.position.set(0, 13.81153, -14.57);
-screenLight.lookAt(0, -5, 8);
+screenLight.lookAt(0, 2.5, 11);
 scene.add(screenLight);
 
 const projector = new THREE.SpotLight(0xfff2df, 8.5, 50, 0.78, 0.85, 1.35);
