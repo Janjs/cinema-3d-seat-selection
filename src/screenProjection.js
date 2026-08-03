@@ -1,6 +1,7 @@
 import * as THREE from "three";
 
-const VIDEO_ASPECT = 16 / 9;
+const VIDEO_ASPECT = 1920 / 1342;
+const VIDEO_PILLAR_PAD = 187 / 1920;
 
 export function createProjectionScreenMaterial(map, screenAspect) {
   const material = new THREE.ShaderMaterial({
@@ -11,6 +12,7 @@ export function createProjectionScreenMaterial(map, screenAspect) {
       projectionStrength: { value: 0.68 },
       videoAspect: { value: VIDEO_ASPECT },
       screenAspect: { value: screenAspect },
+      pillarPad: { value: VIDEO_PILLAR_PAD },
     },
     vertexShader: `
       varying vec2 vUv;
@@ -26,13 +28,16 @@ export function createProjectionScreenMaterial(map, screenAspect) {
       uniform float projectionStrength;
       uniform float videoAspect;
       uniform float screenAspect;
+      uniform float pillarPad;
       varying vec2 vUv;
 
       vec2 coverUv(vec2 uv) {
         vec2 repeat = screenAspect > videoAspect
           ? vec2(1.0, videoAspect / screenAspect)
           : vec2(screenAspect / videoAspect, 1.0);
-        return uv * repeat + (1.0 - repeat) * 0.5;
+        vec2 local = uv * repeat + (1.0 - repeat) * 0.5;
+        local.x = mix(pillarPad, 1.0 - pillarPad, local.x);
+        return local;
       }
 
       void main() {
