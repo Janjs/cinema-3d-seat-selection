@@ -18,7 +18,8 @@ import {
   SEAT_PITCH,
   makeSeats,
 } from "./layout.js";
-import { createCinemaScreen, IMAX_SCREEN_HEIGHT, IMAX_SCREEN_WIDTH } from "./screenMaterial.js";
+import { createCinemaScreen, IMAX_SCREEN_HEIGHT, IMAX_SCREEN_WIDTH, updateCinemaScreenAspect } from "./screenMaterial.js";
+import { createScreenLightController } from "./screenProjection.js";
 import { createSteppedFloor } from "./steppedFloor.js";
 import { createTicketExperience } from "./ticket.js";
 
@@ -141,14 +142,11 @@ screenVideo.preload = "auto";
 screenVideo.loop = true;
 const screenTexture = new THREE.VideoTexture(screenVideo);
 screenTexture.colorSpace = THREE.SRGBColorSpace;
-const screenBacking = new THREE.Mesh(
-  new THREE.PlaneGeometry(IMAX_SCREEN_WIDTH, IMAX_SCREEN_HEIGHT),
-  new THREE.MeshBasicMaterial({ color: 0x030303 }),
-);
-screenBacking.position.set(0, screenCenterY, SCREEN_Z - 0.01);
+screenTexture.repeat.set(1, 1);
+screenTexture.offset.set(0, 0);
 const screen = createCinemaScreen(screenTexture);
 screen.position.set(0, screenCenterY, SCREEN_Z);
-scene.add(screenBacking, screen);
+scene.add(screen);
 
 // Aisle and side-corridor guide lights.
 const aisleLightXs = [...AISLES].map((col) => (col - (COLS - 1) / 2) * SEAT_PITCH);
@@ -183,11 +181,11 @@ const screenLight = new THREE.RectAreaLight(0xc4cedf, 1.5, IMAX_SCREEN_WIDTH * 0
 screenLight.position.set(0, 13.81153, -14.57);
 screenLight.lookAt(0, 2.5, 11);
 scene.add(screenLight);
-
-const projector = new THREE.SpotLight(0xfff2df, 8.5, 50, 0.78, 0.85, 1.35);
-projector.position.set(0, 12, 30);
-projector.target.position.set(0, screenCenterY, SCREEN_Z);
-scene.add(projector, projector.target);
+const screenSpillLight = new THREE.RectAreaLight(0xe8edf5, 2.4, IMAX_SCREEN_WIDTH, IMAX_SCREEN_HEIGHT);
+screenSpillLight.position.set(0, screenCenterY, SCREEN_Z + 0.08);
+screenSpillLight.lookAt(0, screenCenterY, SCREEN_Z + 14);
+scene.add(screenSpillLight);
+const updateScreenSpillLight = createScreenLightController(screenVideo, screenSpillLight);
 
 const seatData = makeSeats();
 const seatGroups = new Map();
@@ -271,11 +269,13 @@ document.addEventListener("keydown", (event) => {
 
 function setScreenFormat(key) {
   const format = SCREEN_FORMATS[key];
-  const videoAspect = 16 / 9;
+  const screenHeight = IMAX_SCREEN_WIDTH / format.aspect;
+  const screenGeometry = new THREE.PlaneGeometry(IMAX_SCREEN_WIDTH, screenHeight);
   screen.geometry.dispose();
-  screen.geometry = new THREE.PlaneGeometry(IMAX_SCREEN_WIDTH, IMAX_SCREEN_WIDTH / format.aspect);
-  screenTexture.repeat.set(Math.min(1, format.aspect / videoAspect), Math.min(1, videoAspect / format.aspect));
-  screenTexture.offset.set((1 - screenTexture.repeat.x) / 2, (1 - screenTexture.repeat.y) / 2);
+  screen.geometry = screenGeometry;
+  screenLight.height = screenHeight;
+  screenSpillLight.height = screenHeight;
+  updateCinemaScreenAspect(screen, format.aspect);
   screenFormatLabel.textContent = format.label;
   screenFormatDetail.textContent = `${format.aspect.toFixed(2)}:1`;
   collapsedFormat.textContent = format.label;
@@ -475,6 +475,7 @@ function render() {
     }
   }
   controls.update(delta);
+  updateScreenSpillLight();
   renderer.render(scene, camera);
 }
 render();
