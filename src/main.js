@@ -339,7 +339,9 @@ for (let row = ROWS - 1; row >= 0; row--) {
 
 let selectedId = null;
 let cameraMove = null;
+let seatViewOrigin = null;
 const seatPreviewEyeHeight = 1.95;
+const seatViewExitDistance = 0.2;
 const selectedRow = document.querySelector("#selected-row");
 const selectedSeat = document.querySelector("#selected-seat");
 const selectedDetail = document.querySelector("#selected-detail");
@@ -354,6 +356,7 @@ function animateCamera(position, target, seatView) {
   controls.maxPolarAngle = seatView ? seatViewMaxPolarAngle : overviewMaxPolarAngle;
   controls.minDistance = seatView ? seatViewMinDistance : overviewMinDistance;
   controls.maxDistance = seatView ? seatViewMaxDistance : overviewMaxDistance;
+  controls.zoomSpeed = seatView ? 8 : 1;
   cameraMove = {
     start: performance.now(),
     duration: 1800,
@@ -364,6 +367,7 @@ function animateCamera(position, target, seatView) {
   };
   controls.enabled = false;
   document.body.classList.toggle("seat-view", seatView);
+  if (!seatView) seatViewOrigin = null;
 }
 
 function chooseSeat(id, preview) {
@@ -389,11 +393,26 @@ function chooseSeat(id, preview) {
   if (preview) {
     const eye = seatGroups.get(id).localToWorld(new THREE.Vector3(0, seatPreviewEyeHeight, -0.08));
     const target = scene.localToWorld(new THREE.Vector3(0, screenCenterY, SCREEN_Z - 0.3)).sub(eye).setLength(0.01).add(eye);
+    seatViewOrigin = eye.clone();
     animateCamera(eye, target, true);
   }
 }
 
-document.querySelector("#overview").addEventListener("click", () => animateCamera(getOverviewPosition(), getOverviewTarget(), false));
+function goToOverview() {
+  animateCamera(getOverviewPosition(), getOverviewTarget(), false);
+}
+
+function maybeExitSeatViewOnZoomOut() {
+  if (!document.body.classList.contains("seat-view") || cameraMove || !seatViewOrigin) return;
+  if (camera.position.distanceTo(seatViewOrigin) < seatViewExitDistance) return;
+  goToOverview();
+}
+
+document.querySelector("#overview").addEventListener("click", goToOverview);
+canvas.addEventListener("wheel", (event) => {
+  if (!document.body.classList.contains("seat-view") || cameraMove || event.deltaY <= 0) return;
+  goToOverview();
+}, { passive: true });
 mapChip.addEventListener("click", (event) => {
   if (event.target.closest(".map-chip-reserve")) return;
   setMapCollapsed(!mapShell.classList.contains("collapsed"));
@@ -475,6 +494,7 @@ function render() {
     }
   }
   controls.update(delta);
+  maybeExitSeatViewOnZoomOut();
   updateScreenSpillLight();
   renderer.render(scene, camera);
 }
